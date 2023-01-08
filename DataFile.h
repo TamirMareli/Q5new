@@ -9,7 +9,7 @@ class DataFile:public AD_File {
 public:
 
 	DataFile(string name, string data);
-	virtual bool operator==(const DataFile& other);
+	virtual bool operator==(const AD_File& other)const;
 	int getSize()const { return this->data.size(); };
 	virtual ~DataFile() {};
 };
