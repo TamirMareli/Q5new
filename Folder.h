@@ -3,7 +3,8 @@
 #include <string>
 #include "AD_File.h"
 #include "DataFile.h"
-
+#include <vector>
+using namespace std;
 class Folder :public AD_File {
 	AD_File** file;
 	int size;
@@ -22,5 +23,9 @@ public:
 	string intoFolder(string _foldername);
 	Folder* findFolderPointer(string path, int currentPlace, string currentFolder, int pathSize) throw(const char*);
 	virtual bool operator==(const AD_File& other)const;
+	vector<string> split(string str, char delimiter);
+	//bool FC(const Folder& currentDir, string source, string dest);
+	bool FC(Folder& currentDir, string source, string dest);
+    AD_File* rpt(vector<string> path,Folder* ptr,int i,int size)const throw(const char*);
 
 };

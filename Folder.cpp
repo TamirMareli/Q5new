@@ -11,8 +11,8 @@ void Folder::addFileToArray(const AD_File* file)throw(const char*)
 			if (!strcmp(typeid(DataFile).name(), typeid(*file).name()) && file->operator==(*this->file[i])) {
 				throw "File allready exists";
 			}
-			if (!strcmp(typeid(Folder).name(), typeid(*file).name()) && file->operator==(*this->file[i])) {
-				throw "File allready exists";
+			if (!strcmp(typeid(Folder).name(), typeid(*file).name()) && file->getName() == this->getName()) {
+				throw "Folder allready exists";
 			}
 		}
 	}
@@ -153,3 +153,50 @@ bool Folder::operator==(const AD_File& other) const
 	}
 	return false;
 }
+
+
+vector<string> Folder::split(string str, char delimiter)
+{
+	vector<string> components;
+	string currentComponent;
+	for (char c : str) {
+		if (c == delimiter) {
+			components.push_back(currentComponent);
+			currentComponent = "";
+		}
+		else {
+			currentComponent += c;
+		}
+	}
+	components.push_back(currentComponent);
+	return components;
+}
+
+
+
+bool Folder::FC( Folder& currentDir, string source, string dest)
+{
+	vector<string> s = split(source, '\\');
+	vector<string> d = split(source, '\\');
+	AD_File* S = rpt(s, &currentDir, 0, s.size());
+	AD_File* D = rpt(d, &currentDir, 0, d.size());
+	S->operator==(*D);
+}
+
+AD_File* Folder::rpt(vector<string> path,Folder* ptr,int i,int size)const
+{
+	if (ptr->getName() == path[i] && i == size) {
+		return ptr;
+	}
+		const Folder* p = dynamic_cast<const Folder*>(ptr);
+		if (p) {
+			for (int j = 0; j < p->size; j++) {
+				if (p->file[j]->getName() == path[i]) {
+					rpt(path, p->file[j], i + 1, size);
+				}
+			}
+		}
+		throw "The File/Folder does not exist";
+}
+
+
