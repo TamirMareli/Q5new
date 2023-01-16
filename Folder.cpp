@@ -2,7 +2,7 @@
 #include <typeinfo>
 
 
-Folder Folder::root("root", "c:");
+Folder Folder::root("root", "");
 
 void Folder::addFileToArray(const AD_File* file)throw(const char*)
 {
@@ -69,14 +69,18 @@ Folder::Folder(Folder& f,string p):AD_File::AD_File(f.FileName)
 
 void Folder::mkfile(const string name, const string data)
 {
-	DataFile* d = new DataFile(name, data);
-	this->addFileToArray(d);
+	DataFile d(name, data);
+	this->addFileToArray(&d);
 }
 
 void Folder::mkDir(string name) throw(const char*)
 {
-	Folder* f = new Folder(name, this->Path);
-	this->addFileToArray(f);
+	string newp = this->Path;
+	if (newp.size()!=0)
+		newp += "\\";
+		newp += name;
+	Folder f(name, newp);
+	this->addFileToArray(&f);
 }
 
 void Folder::dir() const
@@ -93,60 +97,60 @@ void Folder::dir() const
 		}
 	}	
 }
-
 Folder* Folder::cd(string path) throw(const string)
 {
-	int folderPlace = 0;
-	int cureentPlace = path.find_first_of(92);
-	string currentFolder = path.substr(0, cureentPlace);
-	path = path.substr(cureentPlace + 1); 
-	Folder* pfolder = Folder::root.findFolderPointer(path, cureentPlace, currentFolder, path.size());
-	return nullptr;
+	int next = path.find_first_of(92);
+	string inF = path.substr(0, next); 
+	Folder* pr = &Folder::root;
+	path = path.substr(next + 1);
+	return Folder::root.findFolderPointer(path, next, inF, pr);
 }
 
-string Folder::intoFolder(string _foldername)
+Folder* Folder::findFolderPointer(string path, int next, string inF, Folder* Fptr)
 {
-	string newpath(this->Path);
-	newpath += "\\";
-	newpath += this->FileName;
-	return newpath;
+	if (next == -1)
+	{
+		Fptr = Fptr->intoFolder(inF);
+		return Fptr;
+	}
+	Fptr = Fptr->intoFolder(inF);
+	next = path.find_first_of(92);
+	inF = path.substr(0, next);
+	path = path.substr(next + 1);
+	Fptr = Fptr->findFolderPointer(path, next, inF, Fptr);
+	return Fptr;
 }
 
-Folder* Folder::findFolderPointer(string path, int currentPlace, string currentFolder, int pathSize) throw(const char*)
+Folder* Folder::intoFolder(string name) throw (const string)
 {
-	if (pathSize == 0)
-		return this;
 	for (int i = 0; i < this->size; i++)
 	{
-		if (strcmp(typeid(*this->file[i]).name(), typeid(Folder).name())) {
-			if (*this->file[i] == currentFolder)
+		if (!strcmp(typeid(*this->file[i]).name(), "class Folder"))
+			if (this->file[i]->getName() == name)
 			{
-				currentPlace = path.find_first_of(92);
-				currentFolder = path.substr(0, currentPlace);
-				path = path.substr(currentPlace + 1);
-				findFolderPointer(path, currentPlace, currentFolder, path.size());
+				return (Folder*)this->file[i];
 			}
-			else throw "There is not such path";
-		}
 	}
-	return nullptr;
+	throw "folder does not exist in this folder";
 }
+
+
 
 bool Folder::operator==(const AD_File& other) const
 {
 	bool chack = true;
-	chack = AD_File::operator==(other);
 	const Folder* ptr = dynamic_cast<const Folder*>(&other);
 	if (ptr) {
 		if (this->size != ptr->size)
 			return false;
 		for (int i = 0; i < this->size; i++) {
-			if (strcmp(typeid(*this->file[i]).name(), typeid(*ptr->file[i]).name())) {
-				if (strcmp(typeid(*this->file[i]).name(), typeid(Folder).name()))
+			if (!strcmp(typeid(*this->file[i]).name(), typeid(*ptr->file[i]).name())) {
+				if (!strcmp(typeid(*this->file[i]).name(), typeid(Folder).name()))
 					chack = chack&&(this->file[i]->getName() == ptr->file[i]->getName());
 				else
 					chack =chack&& (this->file[i]->operator==(other));
 			}
+			else
 			return false;
 		}
 		return chack;
@@ -174,29 +178,25 @@ vector<string> Folder::split(string str, char delimiter)
 
 
 
-bool Folder::FC( Folder& currentDir, string source, string dest)
+bool fc( Folder& currentDir, string source, string dest)
 {
-	vector<string> s = split(source, '\\');
-	vector<string> d = split(source, '\\');
-	AD_File* S = rpt(s, &currentDir, 0, s.size());
-	AD_File* D = rpt(d, &currentDir, 0, d.size());
-	S->operator==(*D);
-}
 
-AD_File* Folder::rpt(vector<string> path,Folder* ptr,int i,int size)const
+	AD_File* S = currentDir.rpt(source, currentDir);
+	AD_File* D = currentDir.rpt(dest, currentDir);
+	if (S==NULL || D == NULL)
+		return 0;
+
+	return S->operator==(*D);
+
+}
+AD_File* Folder::rpt(string path, Folder& currentDir) throw(const string)
 {
-	if (ptr->getName() == path[i] && i == size) {
-		return ptr;
-	}
-		const Folder* p = dynamic_cast<const Folder*>(ptr);
-		if (p) {
-			for (int j = 0; j < p->size; j++) {
-				if (p->file[j]->getName() == path[i]) {
-					rpt(path, p->file[j], i + 1, size);
-				}
-			}
-		}
-		throw "The File/Folder does not exist";
+	Folder* temp = new Folder(currentDir);
+	int next = path.find_first_of(92);
+	string inF = path.substr(0, next);
+	Folder* pr = &Folder::root;
+	path = path.substr(next + 1);
+	return temp->findFolderPointer(path, next, inF, pr);
 }
 
 
